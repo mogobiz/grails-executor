@@ -13,15 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package grails.plugin.executor
 
 import grails.plugin.executor.PersistenceContextExecutorWrapper
+import org.grails.core.artefact.*
 
 import java.util.concurrent.Executors
 
 class ExecutorGrailsPlugin {
 
-	def version = "0.3"
-	def grailsVersion = "1.2 > *"
+	def grailsVersion = "3.0 > *"
 
 	def author = "Joshua Burnett"
 	def authorEmail = "joshua@greenbill.com"
@@ -33,11 +34,11 @@ class ExecutorGrailsPlugin {
 	def issueManagement = [system: 'GITHUB', url: 'https://github.com/basejump/grails-executor/issues']
 	def scm = [url: 'https://github.com/basejump/grails-executor']
 
-	def observe = ["controllers","services"]
+	def observe = ["controllers","services","domain"]
 
 	def pluginExcludes = [
 		"grails-app/**",
-		"web-app/**"
+		"src/main/webapp/**"
 	]
 
 	def doWithSpring = {
@@ -61,7 +62,10 @@ class ExecutorGrailsPlugin {
 	}
 
 	def doWithDynamicMethods = { ctx ->
-		for (artifactClasses in [application.controllerClasses, application.serviceClasses, application.domainClasses]) {
+		for (artifactClasses in [
+			application.getArtefacts(ControllerArtefactHandler.TYPE), 
+			application.getArtefacts(ServiceArtefactHandler.TYPE), 
+			application.getArtefacts(DomainClassArtefactHandler.TYPE)]) {
 			for (clazz in artifactClasses) {
 				addAsyncMethods(application, clazz)
 			}
@@ -69,8 +73,12 @@ class ExecutorGrailsPlugin {
 	}
 
 	def onChange = { event ->
-		if (application.isControllerClass(event.source) || application.isServiceClass(event.source)) {
+		if (
+			application.isArtefactOfType(ControllerArtefactHandler.TYPE, event.source) || 
+			application.isArtefactOfType(ServiceArtefactHandler.TYPE, event.source) || 
+			application.isArtefactOfType(DomainClassArtefactHandler.TYPE, event.source)) {
 			addAsyncMethods(application, event.source)
 		}
 	}
+
 }

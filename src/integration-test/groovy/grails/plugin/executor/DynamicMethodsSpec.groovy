@@ -16,13 +16,20 @@
 
 package grails.plugin.executor
 
-import org.codehaus.groovy.grails.plugins.PluginManagerHolder
+import grails.test.mixin.integration.Integration
 
-import spock.lang.Unroll
+import grails.util.Holders
+import grails.plugins.GrailsPlugin
+
+import org.grails.core.artefact.*
+
 import executor.test.Book
-import grails.plugin.spock.IntegrationSpec
 
-class DynamicMethodsSpec extends IntegrationSpec {
+import spock.lang.Specification
+import spock.lang.Unroll
+
+@Integration
+class DynamicMethodsSpec extends Specification {
 
 	// Autowired
 	def grailsApplication
@@ -36,13 +43,13 @@ class DynamicMethodsSpec extends IntegrationSpec {
 
 		expect:
 		artifactHasExecutorMethods
-
+/*
 		when:
 		reloadClass()
 
 		then:
 		!artifactHasExecutorMethods
-
+*/
 		when:
 		informOfClassChange()
 
@@ -58,6 +65,12 @@ class DynamicMethodsSpec extends IntegrationSpec {
 		currentClazz = Book
 
 		expect:
+		grailsApplication.isArtefactOfType(DomainClassArtefactHandler.TYPE, currentClazz)
+
+		when:
+		informOfClassChange()
+
+		then:
 		artifactHasExecutorMethods
 	}
 
@@ -74,10 +87,14 @@ class DynamicMethodsSpec extends IntegrationSpec {
 	}
 
 	protected reloadClass() {
-		currentClazz = grailsApplication.classLoader.reloadClass(currentClazz.name)
+		grailsApplication.classLoader.clearCache()
+		currentClazz = loadClass()
 	}
 
 	protected informOfClassChange() {
-		PluginManagerHolder.pluginManager.informOfClassChange(currentClazz)
+		Holders.currentPluginManager().getGrailsPlugin("executor").notifyOfEvent(
+			GrailsPlugin.EVENT_ON_CHANGE, 
+			currentClazz
+		)
 	}
 }

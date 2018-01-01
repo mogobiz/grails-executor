@@ -15,7 +15,7 @@
  */
 package grails.plugin.executor
 
-import static org.junit.Assert.*
+import grails.test.mixin.integration.Integration
 
 import java.util.concurrent.Callable
 import java.util.concurrent.CountDownLatch
@@ -23,12 +23,17 @@ import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 
 import org.junit.After
-import org.junit.AfterClass
 import org.junit.Before
+import org.junit.BeforeClass
 import org.junit.Test
+import static org.junit.Assert.*
 
 import executor.test.Book
 
+import grails.util.Holders
+import grails.plugins.GrailsPlugin
+
+@Integration
 class PersistenceExecutorServiceTests {
 
 	static transactional = false
@@ -36,9 +41,16 @@ class PersistenceExecutorServiceTests {
 	def sessionFactory
 	def executorService
 
+	@BeforeClass
+	static void reload(){
+		Holders.currentPluginManager().getGrailsPlugin("executor").notifyOfEvent(
+			GrailsPlugin.EVENT_ON_CHANGE, 
+			Book
+		)
+	}
+
 	@Before
 	void setup() {
-
 		Book.withNewSession {
 			1.upto(5) { new Book(name: "$it").save() }
 		}
@@ -135,14 +147,6 @@ class PersistenceExecutorServiceTests {
 		assertEquals "nailed it", fbook
 		assertEquals(0, Book.count())
 
-	}
-
-	@AfterClass
-	static void tearDownData() {
-/*		Album.withNewSession { session ->
-			Album.list()*.delete()
-			session.flush()
-		}*/
 	}
 
 	static void waitFor(String message, CountDownLatch latch, long timeout = 1l) {

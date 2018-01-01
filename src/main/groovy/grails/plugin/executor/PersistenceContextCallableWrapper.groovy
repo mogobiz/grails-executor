@@ -18,7 +18,7 @@ package grails.plugin.executor
 
 import java.util.concurrent.Callable
 
-import org.codehaus.groovy.grails.support.PersistenceContextInterceptor
+import grails.persistence.support.PersistenceContextInterceptor
 
 /**
  * Wraps the execution of a Callable in a persistence context, via the persistenceInterceptor.

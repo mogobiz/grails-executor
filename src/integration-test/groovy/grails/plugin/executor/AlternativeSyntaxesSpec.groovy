@@ -16,14 +16,17 @@
 
 package grails.plugin.executor
 
-import grails.plugin.spock.IntegrationSpec
+import grails.test.mixin.integration.Integration
+
+import spock.lang.Specification
 
 import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 
-class AlternativeSyntaxesSpec extends IntegrationSpec {
+@Integration
+class AlternativeSyntaxesSpec extends Specification {
 
-	// Autowired
+	//Autowired
 	def executorService
 
 	def "left shift closure"() {

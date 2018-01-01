@@ -1,0 +1,34 @@
+plugins {
+    id "io.spring.dependency-management" version "0.5.4.RELEASE"
+    id "com.jfrog.bintray" version "1.2"
+}
+
+group   "org.grails.plugins"
+version "0.4-SNAPSHOT"
+
+integrationTest {
+    ignoreFailures = true
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.grails:grails-bom:$grailsVersion"
+    }
+    applyMavenExclusions false
+}
+
+dependencies {
+    compile("org.grails.plugins:http-builder-helper:1.1.0"){
+        exclude group: "org.codehaus.groovy.modules.http-builder", module: "http-builder"
+    }
+
+	compile "org.grails.plugins:hibernate3:$gormVersion"
+    compile "org.hibernate:hibernate-core:3.6.10.Final"
+    compile "org.hibernate:hibernate-ehcache:3.6.10.Final"
+
+    runtime('org.codehaus.groovy.modules.http-builder:http-builder:0.7.1'){
+        exclude group: 'org.codehaus.groovy'
+        exclude group: 'net.sourceforge.nekohtml', module: 'nekohtml'
+    }
+
+}

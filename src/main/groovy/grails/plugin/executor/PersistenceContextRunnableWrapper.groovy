@@ -16,29 +16,21 @@
 
 package grails.plugin.executor
 
-import org.codehaus.groovy.grails.support.PersistenceContextInterceptor
+import grails.persistence.support.PersistenceContextInterceptor
 
 /**
  * Wraps the execution of a Runnable in a persistence context, via the persistenceInterceptor.
  */
-class PersistenceContextWrapper {
+class PersistenceContextRunnableWrapper<T> extends PersistenceContextWrapper implements Runnable {
 
-	private final PersistenceContextInterceptor persistenceInterceptor
+	private final Runnable runnable
 
-	PersistenceContextWrapper(PersistenceContextInterceptor persistenceInterceptor) {
-		this.persistenceInterceptor = persistenceInterceptor
+	PersistenceContextRunnableWrapper(PersistenceContextInterceptor persistenceInterceptor, Runnable runnable) {
+		super(persistenceInterceptor)
+		this.runnable = runnable
 	}
 
-	protected wrap(Closure wrapped) {
-		persistenceInterceptor.init()
-		try {
-			wrapped()
-		} finally {
-			try {
-				persistenceInterceptor.flush()
-			} finally {
-				persistenceInterceptor.destroy()
-		 	}
-		}
+	void run() {
+		wrap { runnable.run() }
 	}
 }
