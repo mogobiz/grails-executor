@@ -66,86 +66,94 @@ class PersistenceExecutorServiceTests {
 	@Test
 	void testExecute() {
 		assertTrue Book.runAsyncFired.get()
-		assert 5 == Book.count()
+		Book.withNewSession {
+			assert 5 == Book.count()
 
-		def latch = new CountDownLatch(1)
-		executorService.execute {
-			assertEquals(5, Book.count())
-			Book.list()*.delete()
-			new Book(name: "async book").save()
-			latch.countDown()
+			def latch = new CountDownLatch(1)
+			executorService.execute {
+				assertEquals(5, Book.count())
+				Book.list()*.delete()
+				new Book(name: "async book").save()
+				latch.countDown()
+			}
+
+			waitFor "end of book delete task", latch
+			//sleep for a second to wait for the thread to finish and the session to flush
+			sleep(1000)
+			assertEquals(1, Book.count())
 		}
-
-		waitFor "end of book delete task", latch
-		//sleep for a second to wait for the thread to finish and the session to flush
-		sleep(1000)
-		assertEquals(1, Book.count())
 	}
 
 	@Test
 	void testSubmitCallable() {
+		Book.withNewSession {
 
-		assert 5 == Book.count()
+			assert 5 == Book.count()
 
-		def latch = new CountDownLatch(1)
+			def latch = new CountDownLatch(1)
 
-		def closure = {
+			def closure = {
+				assertEquals(5, Book.count())
+				sleep(2000) //give it a couple of seconds in here so we can test stuff
+				Book.list()*.delete()
+				def book = new Book(name: "async book").save()
+				latch.countDown()
+				return book
+			}
+
+			Future future = executorService.submit(closure as Callable)
+
+			//this should fire while the submited callable task is still running still show 5
 			assertEquals(5, Book.count())
-			sleep(2000) //give it a couple of seconds in here so we can test stuff
-			Book.list()*.delete()
-			def book = new Book(name: "async book").save()
-			latch.countDown()
-			return book
+
+			waitFor "end of callable", latch, 4l
+			//just to make sure we are good this thread before the other finishes
+			new Book(name: "normal book").save()
+
+			def fbook = future.get() //this will sit here and wait for the submited callable to finish and return the value.
+			assertEquals "async book", fbook.name
+			assertEquals(2, Book.count())
 		}
-
-		Future future = executorService.submit(closure as Callable)
-
-		//this should fire while the submited callable task is still running still show 5
-		assertEquals(5, Book.count())
-
-		waitFor "end of callable", latch, 4l
-		//just to make sure we are good this thread before the other finishes
-		new Book(name: "normal book").save()
-
-		def fbook = future.get() //this will sit here and wait for the submited callable to finish and return the value.
-		assertEquals "async book", fbook.name
-		assertEquals(2, Book.count())
 	}
 
 	@Test
 	void testSubmitRunnable() {
+		Book.withNewSession {
 
-		def latch = new CountDownLatch(1)
+			def latch = new CountDownLatch(1)
 
-		Future future = executorService.submit( {
-			//Book.withTransaction {
-				Book.list()*.delete()
-			//}
-			latch.countDown()
-		} as Runnable)
+			Future future = executorService.submit( {
+				//Book.withTransaction {
+					Book.list()*.delete()
+				//}
+				latch.countDown()
+			} as Runnable)
 
-		waitFor "end of runnable", latch
+			waitFor "end of runnable", latch
 
-		def fbook = future.get() //this will return a null since we sumbmited a runnable
-		assertNull fbook
-		assertEquals(0, Book.count())
+			def fbook = future.get() //this will return a null since we sumbmited a runnable
+			assertNull fbook
+			assertEquals(0, Book.count())
+		}
 	}
 
 	@Test
 	void testSubmitRunnableWithReturn() {
+		Book.withNewSession {
 
-		def latch = new CountDownLatch(1)
-		def clos = {
-			Book.list()*.delete()
-			latch.countDown()
+			def latch = new CountDownLatch(1)
+			def clos = {
+				Book.list()*.delete()
+				latch.countDown()
+			}
+
+			Future future = executorService.submit(clos,"nailed it" )
+			waitFor "end of runnable", latch
+
+			def fbook = future.get() //this will return a null since we sumbmited a runnable
+			assertEquals "nailed it", fbook
+			assertEquals(0, Book.count())
 		}
-
-		Future future = executorService.submit(clos,"nailed it" )
-		waitFor "end of runnable", latch
-
-		def fbook = future.get() //this will return a null since we sumbmited a runnable
-		assertEquals "nailed it", fbook
-		assertEquals(0, Book.count())
 
 	}
 

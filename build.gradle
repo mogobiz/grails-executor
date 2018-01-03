@@ -22,9 +22,7 @@ dependencies {
         exclude group: "org.codehaus.groovy.modules.http-builder", module: "http-builder"
     }
 
-	compile "org.grails.plugins:hibernate3:$gormVersion"
-    compile "org.hibernate:hibernate-core:3.6.10.Final"
-    compile "org.hibernate:hibernate-ehcache:3.6.10.Final"
+	compile "org.grails.plugins:hibernate:$grailsHibernateVersion"
 
     runtime('org.codehaus.groovy.modules.http-builder:http-builder:0.7.1'){
         exclude group: 'org.codehaus.groovy'
